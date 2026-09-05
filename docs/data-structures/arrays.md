@@ -1,6 +1,6 @@
 # Array
 
-> A practical reference for Python's `array.array` with examples, memory layout, type codes, and common operations.
+> A practical reference for Python's `array.array` with examples, memory layout, type codes, operations, and time complexity.
 
 | Field | Details |
 |---|---|
@@ -132,15 +132,8 @@ The actual size of an element can depend on the machine architecture and C imple
 +----------+-------------------+-------------------+----------------------+
 ```
 
-### Notes
+> The table follows the current Python documentation. Some type codes and their availability depend on the Python version and platform.
 
-1. `'w'` was added in Python 3.13.
-2. `'e'` was added in Python 3.14/3.15-era documentation and depends on compiler support for `_Float16`.
-3. `'Zf'` and `'Zd'` are complex-number type codes available in current Python documentation.
-
-The **actual size** of an array item can depend on the machine architecture and C implementation. Use `array.itemsize` when the actual size matters.
-
-> **Source:** [Python `array` documentation](https://docs.python.org/3/library/array.html)
 ---
 
 ## 4. Creating an Array
@@ -216,6 +209,19 @@ Example:
 ```text
 Starting address = 12
 Element size     = 4 bytes
+```
+
+```text
+Index:     0    1    2    3    4    5    6
+Address:  12   16   20   24   28   32   36
+Value:    20   35  -15    7   55    1  -22
+```
+
+The next element is found by adding the element size to the previous address:
+
+```text
+12 → 16 → 20 → 24 → 28 → 32 → 36
+     +4    +4    +4    +4    +4    +4
 ```
 
 ```text
@@ -393,24 +399,131 @@ Use `array.array` when you specifically need compact, typed storage from Python'
 
 ---
 
-## 13. Time Complexity
 
-For common operations:
+## 13. Disadvantages of Arrays
 
-| Operation | Typical Complexity |
-|---|---:|
-| Access by index | `O(1)` |
-| Update by index | `O(1)` |
-| Search | `O(n)` |
-| Append | `O(1)` amortized |
-| Insert | `O(n)` |
-| Delete | `O(n)` |
+Arrays provide fast indexed access, but some operations are less efficient when the position of an element is unknown or when elements need to be shifted.
 
-> Exact performance depends on the operation and the underlying implementation.
+### Searching Without a Known Index
+
+If the index of a value is not known, the array may need to be traversed element by element.
+
+```python
+from array import array
+
+int_array = array('l', [0] * 7)
+
+int_array[0] = 20
+int_array[1] = 35
+int_array[2] = -15
+int_array[3] = 7
+int_array[4] = 55
+int_array[5] = 1
+int_array[6] = -22
+
+print(int_array)
+# array('l', [20, 35, -15, 7, 55, 1, -22])
+
+found_index = -1
+
+for index in range(len(int_array)):
+    if int_array[index] == 7:
+        found_index = index
+        break
+
+print(f"The value 7 was found at index {found_index}")
+# The value 7 was found at index 3
+```
+
+Because the position of `7` was not known, the array had to be searched sequentially.
+
+In the worst case, the value may be at the last position, requiring every element to be checked.
+
+Therefore:
+
+```text
+Search without a known index → O(n)
+```
+
+#### Search Traversal
+
+```text
+Array:
+Index:    0    1     2    3    4    5     6
+Value:   20   35   -15    7   55    1   -22
+                    ↑
+                  Found
+```
+
+The search checks each element from left to right until the target value is found or the array is exhausted.
+
+```text
+20 → 35 → -15 → 7
+↑      ↑      ↑    ↑
+1st    2nd    3rd  4th check
+```
+
+### Shifting Elements
+
+In a traditional fixed-size array, inserting or deleting an element from the middle requires subsequent elements to be shifted.
+
+```text
+Before:
+[10] [20] [30] [40] [50]
+           ↓
+        remove 30
+
+After shifting:
+[10] [20] [40] [50] [  ]
+             ← elements shifted
+```
+
+This makes insertion or deletion at an arbitrary position `O(n)`.
+
+### Fixed Capacity in Traditional Arrays
+
+Traditional arrays in languages such as C and Java have a fixed length.
+
+If a traditional array is full and a new element must be added, a larger array must be allocated and the existing elements copied.
+
+```text
+Old array:
+[10] [20] [30] [40]
+  └────┴────┴────┴────┘
+        full
+
+              ↓ allocate larger array + copy
+
+New array:
+[10] [20] [30] [40] [50] [  ]
+ └────┴────┴────┴────┴────┴────┘
+```
+
+The copying process takes `O(n)` time.
+
+> Python's `array.array` is resizable, so this fixed-capacity limitation does not apply in the same way. The fixed-size explanation is useful for understanding the traditional array data structure.
 
 ---
 
-## 14. Complete Example
+## 14. Time Complexity
+
+For common array operations:
+
+| Operation | Complexity | Reason |
+|---|---:|---|
+| Access by index | `O(1)` | Direct address calculation |
+| Update by index | `O(1)` | Direct access |
+| Search without index | `O(n)` | May need to inspect every element |
+| Add to the end when space is available | `O(1)` | Add at the end |
+| Add to a full traditional array | `O(n)` | Allocate a larger array and copy elements |
+| Insert at a specific index | `O(n)` | Elements may need to shift |
+| Delete by marking a position unused | `O(1)` | Only the target position changes |
+| Delete by shifting elements | `O(n)` | Remaining elements must be shifted |
+
+> **Note:** These complexities describe the standard array data structure. Python's `array.array` is resizable, so its resizing behavior is an implementation detail rather than the fixed-capacity behavior of a traditional array.
+
+
+# 16. Complete Example
 
 ```python
 from array import array
@@ -448,7 +561,7 @@ print(int_array)
 
 ---
 
-## 15. Key Points
+## 17. Key Points
 
 - Python provides typed arrays through the standard-library `array` module.
 - `array.array` stores values of a single specified type.
