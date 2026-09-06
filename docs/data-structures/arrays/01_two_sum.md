@@ -1,8 +1,8 @@
 # Two Sum
 
 **Author:** Harshul Raina
+**Problem:** LeetCode 01 - Two Sum
 **Topic:** Arrays / Hash Map
-**Leet Code:** 01-Two Sum
 **Difficulty:** Easy
 
 ---
